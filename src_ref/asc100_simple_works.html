@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base100 ASCII Encoder</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        textarea {
+            width: 100%;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+        .input-area {
+            height: 150px;
+            background-color: #fafafa;
+        }
+        .output-area {
+            height: 100px;
+            background-color: #f0f9ff;
+            border-color: #0ea5e9;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 8px 8px 8px 0;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        .encode-btn {
+            background: #10b981;
+            font-size: 16px;
+            padding: 15px 30px;
+        }
+        .encode-btn:hover {
+            background: #059669;
+        }
+        .clear-btn {
+            background: #6b7280;
+        }
+        .clear-btn:hover {
+            background: #4b5563;
+        }
+        .copy-btn {
+            background: #8b5cf6;
+            font-size: 12px;
+            padding: 8px 16px;
+        }
+        .copy-btn:hover {
+            background: #7c3aed;
+        }
+        .stats {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-size: 13px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1e40af;
+        }
+        .stat-label {
+            color: #64748b;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .result {
+            padding: 12px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        .success { 
+            color: #16a34a;
+            background: #f0fdf4;
+            border-left: 4px solid #16a34a;
+        }
+        .error { 
+            color: #dc2626;
+            background: #fef2f2;
+            border-left: 4px solid #dc2626;
+        }
+        .warning {
+            color: #ca8a04;
+            background: #fffbeb;
+            border-left: 4px solid #ca8a04;
+        }
+        .charset-info {
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 12px;
+            margin: 15px 0;
+            border-left: 4px solid #3b82f6;
+        }
+        .url-test {
+            background: #fff3e0;
+            border: 1px solid #ff9800;
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 12px;
+            margin: 15px 0;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔧 Base100 ASCII Encoder</h1>
+        <p>Lossless binary encoding for URL-safe text transport • Perfect for code & config transmission</p>
+    </div>
+    
+    <div class="container">
+        <h3>Input Text (Base100 Character Set)</h3>
+        <textarea id="input" class="input-area" placeholder="Enter your code, configuration, or text here...
+
+Supports: A-Z, a-z, 0-9, programming symbols, whitespace
+Special markers: #EOF# #EOS#
+
+Example:
+console.log('Hello, World!');
+function test() { return 42; }#EOF#">console.log("Hello, World!");
+function greet(name) {
+    return `Hello, ${name}!`;
+}
+console.log(greet("Developer"));#EOF#</textarea>
+        
+        <div style="margin: 15px 0;">
+            <button class="encode-btn" onclick="encodeText()">🔄 Encode</button>
+            <button onclick="decodeText()">🔍 Decode</button>
+            <button onclick="testRoundTrip()">🔄 Test Round-Trip</button>
+            <button class="clear-btn" onclick="clearAll()">Clear</button>
+        </div>
+        
+        <div id="status"></div>
+    </div>
+
+    <div class="container">
+        <h3>Encoded Output (URL-Safe)</h3>
+        <textarea id="encoded" class="output-area" placeholder="Base64-encoded text will appear here..." readonly></textarea>
+        <div style="margin-top: 10px;">
+            <button class="copy-btn" onclick="copyEncoded()">📋 Copy</button>
+            <button onclick="generateTestUrl()">🌐 Generate Test URL</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h3>Decoded Verification</h3>
+        <textarea id="decoded" class="output-area" placeholder="Decoded verification will appear here..." readonly></textarea>
+    </div>
+
+    <div class="stats" id="stats" style="display: none;">
+        <div class="stat-item">
+            <div class="stat-value" id="originalSize">0</div>
+            <div class="stat-label">Original Chars</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="encodedSize">0</div>
+            <div class="stat-label">Encoded Chars</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="compressionRatio">0x</div>
+            <div class="stat-label">Size Ratio</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="efficiency">87%</div>
+            <div class="stat-label">Bit Efficiency</div>
+        </div>
+    </div>
+
+    <div class="url-test" id="urlTest" style="display: none;">
+        <strong>Test URL:</strong><br>
+        <code id="testUrl"></code><br>
+        <a id="urlLink" href="#" target="_blank">→ Test in new tab</a>
+    </div>
+
+    <div class="container">
+        <div class="charset-info">
+            <strong>Supported Base100 Character Set:</strong><br>
+            • <strong>Letters:</strong> A-Z, a-z (52 chars)<br>
+            • <strong>Digits:</strong> 0-9 (10 chars)<br>
+            • <strong>Symbols:</strong> !"#$%&'()*+,-./:;<=>?@[\]^_`{|}~ (32 chars)<br>
+            • <strong>Whitespace:</strong> space, tab, newline, carriage return (4 chars)<br>
+            • <strong>Markers:</strong> #EOF#, #EOS# (2 special markers)<br><br>
+            <strong>Total:</strong> 100 characters → 7 bits per character → Base64 output
+        </div>
+    </div>
+
+    <script>
+        // Base100 character set (exactly 100 characters)
+        const BASE_CHARSET = 
+            ' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~' +
+            '\t\n\r\x01\x02'; // tab, newline, CR, EOF, EOS
+        
+        // Special markers for readability
+        const MARKERS = {
+            '#EOF#': '\x01',
+            '#EOS#': '\x02'
+        };
+        
+        const MARKERS_REVERSE = {
+            '\x01': '#EOF#',
+            '\x02': '#EOS#'
+        };
+        
+        // Base64 alphabet for URL-safe output
+        const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+        
+        function showStatus(message, type = 'success') {
+            const status = document.getElementById('status');
+            status.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+        
+        function preprocessText(text) {
+            let processed = text;
+            for (const [marker, code] of Object.entries(MARKERS)) {
+                processed = processed.replaceAll(marker, code);
+            }
+            return processed;
+        }
+        
+        function postprocessText(text) {
+            let processed = text;
+            for (const [code, marker] of Object.entries(MARKERS_REVERSE)) {
+                processed = processed.replaceAll(code, marker);
+            }
+            return processed;
+        }
+        
+        function base100Encode(input) {
+            if (input === '') return '';
+            
+            // Step 1: Preprocess markers
+            const processed = preprocessText(input);
+            
+            // Step 2: Validate characters
+            for (const char of processed) {
+                if (!BASE_CHARSET.includes(char)) {
+                    throw new Error(`Unsupported character: "${char}" (U+${char.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0')})`);
+                }
+            }
+            
+            // Step 3: Convert to character indices
+            const indices = [];
+            for (const char of processed) {
+                indices.push(BASE_CHARSET.indexOf(char));
+            }
+            
+            // Step 4: Pack into 7-bit binary
+            let binaryStr = '';
+            for (const index of indices) {
+                binaryStr += index.toString(2).padStart(7, '0');
+            }
+            
+            // Step 5: Pad to multiple of 6 bits for Base64
+            while (binaryStr.length % 6 !== 0) {
+                binaryStr += '0';
+            }
+            
+            // Step 6: Convert to Base64
+            let encoded = '';
+            for (let i = 0; i < binaryStr.length; i += 6) {
+                const sixBits = binaryStr.substring(i, i + 6);
+                const outputIndex = parseInt(sixBits, 2);
+                encoded += BASE64_CHARS[outputIndex];
+            }
+            
+            return encoded;
+        }
+        
+        function base100Decode(encoded) {
+            if (encoded === '') return '';
+            
+            // Step 1: Convert Base64 back to binary
+            let binaryStr = '';
+            for (const char of encoded) {
+                const index = BASE64_CHARS.indexOf(char);
+                if (index === -1) {
+                    throw new Error(`Invalid encoded character: "${char}"`);
+                }
+                binaryStr += index.toString(2).padStart(6, '0');
+            }
+            
+            // Step 2: Extract 7-bit character indices
+            const indices = [];
+            for (let i = 0; i <= binaryStr.length - 7; i += 7) {
+                const sevenBits = binaryStr.substring(i, i + 7);
+                const index = parseInt(sevenBits, 2);
+                if (index < BASE_CHARSET.length) {
+                    indices.push(index);
+                }
+            }
+            
+            // Step 3: Convert indices back to characters
+            let decoded = '';
+            for (const index of indices) {
+                decoded += BASE_CHARSET[index];
+            }
+            
+            // Step 4: Postprocess markers
+            return postprocessText(decoded);
+        }
+        
+        function encodeText() {
+            const input = document.getElementById('input').value;
+            
+            try {
+                const encoded = base100Encode(input);
+                document.getElementById('encoded').value = encoded;
+                
+                // Update stats
+                document.getElementById('originalSize').textContent = input.length;
+                document.getElementById('encodedSize').textContent = encoded.length;
+                document.getElementById('compressionRatio').textContent = 
+                    input.length > 0 ? (encoded.length / input.length).toFixed(2) + 'x' : '1.00x';
+                document.getElementById('stats').style.display = 'grid';
+                
+                showStatus('✓ Text encoded successfully! Ready for URL transmission.');
+                
+            } catch (error) {
+                showStatus(`✗ Encoding failed: ${error.message}`, 'error');
+                document.getElementById('stats').style.display = 'none';
+            }
+        }
+        
+        function decodeText() {
+            const encoded = document.getElementById('encoded').value;
+            
+            if (!encoded.trim()) {
+                showStatus('⚠ No encoded text to decode.', 'warning');
+                return;
+            }
+            
+            try {
+                const decoded = base100Decode(encoded);
+                document.getElementById('decoded').value = decoded;
+                showStatus('✓ Text decoded successfully!');
+                
+            } catch (error) {
+                showStatus(`✗ Decoding failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function testRoundTrip() {
+            const input = document.getElementById('input').value;
+            
+            if (!input.trim()) {
+                showStatus('⚠ No input text to test.', 'warning');
+                return;
+            }
+            
+            try {
+                const encoded = base100Encode(input);
+                const decoded = base100Decode(encoded);
+                
+                document.getElementById('encoded').value = encoded;
+                document.getElementById('decoded').value = decoded;
+                
+                if (input === decoded) {
+                    showStatus('✅ Perfect round-trip! Original and decoded text are identical.');
+                } else {
+                    showStatus('❌ Round-trip failed! Decoded text differs from original.', 'error');
+                }
+                
+                // Update stats
+                document.getElementById('originalSize').textContent = input.length;
+                document.getElementById('encodedSize').textContent = encoded.length;
+                document.getElementById('compressionRatio').textContent = 
+                    input.length > 0 ? (encoded.length / input.length).toFixed(2) + 'x' : '1.00x';
+                document.getElementById('stats').style.display = 'grid';
+                
+            } catch (error) {
+                showStatus(`✗ Round-trip test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function generateTestUrl() {
+            const encoded = document.getElementById('encoded').value;
+            
+            if (!encoded.trim()) {
+                showStatus('⚠ No encoded text to generate URL.', 'warning');
+                return;
+            }
+            
+            const testUrl = `https://postman-echo.com/get?code=${encoded}&parser=base100&test=lossless`;
+            document.getElementById('testUrl').textContent = testUrl;
+            document.getElementById('urlLink').href = testUrl;
+            document.getElementById('urlTest').style.display = 'block';
+            
+            showStatus('🌐 Test URL generated! Click link to test transmission.');
+        }
+        
+        function copyEncoded() {
+            const encoded = document.getElementById('encoded');
+            if (!encoded.value.trim()) {
+                showStatus('⚠ No encoded text to copy.', 'warning');
+                return;
+            }
+            
+            encoded.select();
+            document.execCommand('copy');
+            showStatus('📋 Encoded text copied to clipboard!');
+        }
+        
+        function clearAll() {
+            document.getElementById('input').value = '';
+            document.getElementById('encoded').value = '';
+            document.getElementById('decoded').value = '';
+            document.getElementById('status').innerHTML = '';
+            document.getElementById('stats').style.display = 'none';
+            document.getElementById('urlTest').style.display = 'none';
+        }
+        
+        // Initialize
+        console.log('Base100 ASCII Encoder initialized');
+        console.log('Character set size:', BASE_CHARSET.length);
+        console.log('Bits per character: 7');
+        console.log('Output format: Base64 (URL-safe)');
+    </script>
+</body>
+</html>

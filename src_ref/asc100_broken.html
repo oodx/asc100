@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASC100 Character Encoder</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #64748b;
+            font-size: 14px;
+        }
+        
+        .badge {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-left: 10px;
+            font-weight: bold;
+        }
+        
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .panel {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .panel h3 {
+            color: #1e293b;
+            margin-bottom: 15px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        textarea {
+            width: 100%;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            resize: vertical;
+            transition: border-color 0.2s;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .input-area {
+            min-height: 200px;
+            background-color: #fafafa;
+        }
+        
+        .output-area {
+            min-height: 150px;
+            background-color: #f0f9ff;
+            border-color: #0ea5e9;
+        }
+        
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .encode-btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        
+        .decode-btn {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+        
+        .test-btn {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+        
+        .clear-btn {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            color: #64748b;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 5px;
+        }
+        
+        .status-message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .success {
+            background: #f0fdf4;
+            color: #16a34a;
+            border-left: 4px solid #16a34a;
+        }
+        
+        .error {
+            background: #fef2f2;
+            color: #dc2626;
+            border-left: 4px solid #dc2626;
+        }
+        
+        .warning {
+            background: #fffbeb;
+            color: #ca8a04;
+            border-left: 4px solid #ca8a04;
+        }
+        
+        .info {
+            background: #f0f9ff;
+            color: #0284c7;
+            border-left: 4px solid #0284c7;
+        }
+        
+        .charset-reference {
+            background: #f1f5f9;
+            border: 2px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .charset-reference h4 {
+            color: #334155;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        
+        .charset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            font-size: 12px;
+        }
+        
+        .charset-section {
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .charset-section strong {
+            color: #475569;
+            display: block;
+            margin-bottom: 8px;
+        }
+        
+        .charset-section code {
+            color: #0f172a;
+            background: #f8fafc;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+        
+        .marker-list {
+            margin-top: 5px;
+        }
+        
+        .marker-list li {
+            margin: 3px 0;
+            list-style-position: inside;
+        }
+        
+        .example-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .example-item {
+            padding: 10px;
+            background: #f8fafc;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            font-size: 12px;
+        }
+        
+        .example-item strong {
+            color: #334155;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .example-item code {
+            color: #0f172a;
+            background: white;
+            padding: 4px;
+            border-radius: 3px;
+            display: block;
+            margin-top: 3px;
+            word-break: break-all;
+        }
+        
+        .warning-box {
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="header">
+            <h1>🔧 ASC100 Character Encoder</h1>
+            <p>Lossless 7-bit encoding for URL-safe text transmission <span class="badge">v1.0</span></p>
+        </div>
+        
+        <div class="content-grid">
+            <div class="panel">
+                <h3>📝 Input Text</h3>
+                <textarea id="input" class="input-area" placeholder="Enter your text here...
+
+Supports:
+• All printable ASCII characters (A-Z, a-z, 0-9, symbols)
+• Whitespace (space, tab, newline, carriage return)
+• Special markers: #SSX# #ESX# #EOF# #NL# (optional hints)
+
+Example:
+console.log('Hello, World!');
+function test() { 
+    return 42; 
+}#EOF#">// Example JavaScript code
+function greet(name) {
+    console.log(`Hello, ${name}!`);
+    return true;
+}
+
+greet("Developer");
+#EOF#</textarea>
+                
+                <div class="button-group">
+                    <button class="encode-btn" onclick="encodeText()">
+                        🔒 Encode
+                    </button>
+                    <button class="decode-btn" onclick="decodeText()">
+                        🔓 Decode
+                    </button>
+                    <button class="test-btn" onclick="testRoundTrip()">
+                        🔄 Round-Trip Test
+                    </button>
+                    <button class="clear-btn" onclick="clearAll()">
+                        🗑️ Clear All
+                    </button>
+                </div>
+                
+                <div id="status"></div>
+            </div>
+            
+            <div class="panel">
+                <h3>🔐 Encoded Output (Base64)</h3>
+                <textarea id="encoded" class="output-area" placeholder="Base64-encoded output will appear here..." readonly></textarea>
+                
+                <div class="button-group">
+                    <button onclick="copyEncoded()">📋 Copy Encoded</button>
+                    <button onclick="testMarkers()">🧪 Test Markers</button>
+                </div>
+                
+                <div id="stats" class="stats-grid" style="display: none;">
+                    <div class="stat-item">
+                        <div class="stat-value" id="originalSize">0</div>
+                        <div class="stat-label">Original</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="encodedSize">0</div>
+                        <div class="stat-label">Encoded</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="ratio">1.0x</div>
+                        <div class="stat-label">Ratio</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="efficiency">87.5%</div>
+                        <div class="stat-label">Efficiency</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <h3>✅ Decoded Verification</h3>
+            <textarea id="decoded" class="output-area" placeholder="Decoded text will appear here for verification..." readonly></textarea>
+            <div id="verificationResult"></div>
+        </div>
+        
+        <div class="panel charset-reference">
+            <h4>📚 ASC100 Character Encoding Reference</h4>
+            <div class="charset-grid">
+                <div class="charset-section">
+                    <strong>🔤 Base100 Character Set (Indices 0-99):</strong>
+                    <div style="margin-top: 8px;">
+                        <code>0-94:</code> All printable ASCII<br>
+                        Space through tilde (~)<br>
+                        <code>!"#$%&'()*+,-./0123456789:;<=>?@</code><br>
+                        <code>ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`</code><br>
+                        <code>abcdefghijklmnopqrstuvwxyz{|}~</code><br><br>
+                        <code>95:</code> Tab <code>\t</code><br>
+                        <code>96:</code> Newline <code>\n</code><br>
+                        <code>97:</code> Carriage Return <code>\r</code><br>
+                        <code>98:</code> Null <code>\0</code><br>
+                        <code>99:</code> Reserved
+                    </div>
+                </div>
+                
+                <div class="charset-section">
+                    <strong>🏷️ Extension Markers (Indices 100-103):</strong>
+                    <ul class="marker-list">
+                        <li><code>100:</code> <code>#SSX#</code> - Start of stream</li>
+                        <li><code>101:</code> <code>#ESX#</code> - End of stream</li>
+                        <li><code>102:</code> <code>#EOF#</code> - End of file</li>
+                        <li><code>103:</code> <code>#NL#</code> - Newline hint</li>
+                        <li><code>104-127:</code> Reserved for future use</li>
+                    </ul>
+                    <div class="warning-box">
+                        <strong>⚠️ Note:</strong> Markers are one-way hints only! They convert to indices during encoding but are NOT recreated during decoding. The actual whitespace characters are preserved.
+                    </div>
+                </div>
+                
+                <div class="charset-section">
+                    <strong>🔧 How It Works:</strong>
+                    <div style="margin-top: 8px; line-height: 1.6;">
+                        1. <strong>Map</strong> each character to index 0-99<br>
+                        2. <strong>Replace</strong> markers with indices 100-103<br>
+                        3. <strong>Pack</strong> indices as 7-bit values<br>
+                        4. <strong>Encode</strong> binary as Base64<br>
+                        5. <strong>Decode</strong> preserves actual chars<br><br>
+                        <em>Markers are hints, not replacements!</em>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="example-grid">
+                <div class="example-item">
+                    <strong>Simple Text:</strong>
+                    Input: <code>"Hello\nWorld"</code>
+                    Output: <code>Newline preserved as \n</code>
+                </div>
+                <div class="example-item">
+                    <strong>With Marker Hint:</strong>
+                    Input: <code>"Test#EOF#"</code>
+                    Output: <code>"Test" + index 102</code>
+                </div>
+                <div class="example-item">
+                    <strong>Decode Behavior:</strong>
+                    Input: <code>Index 102</code>
+                    Output: <code>Nothing (hint only)</code>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // ASC100 Character Set - exactly 100 characters (indices 0-99)
+        // Printable ASCII (95) + essential whitespace (4) + reserved (1)
+        const BASE_CHARSET = 
+            ' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~' +
+            '\t\n\r\0' +  // Tab (95), Newline (96), CR (97), Null (98)
+            '\x01';       // Reserved (99)
+        
+        // Extension markers - one-way hints only (indices 100-103)
+        const MARKERS = {
+            '#SSX#': 100,   // Start of stream
+            '#ESX#': 101,   // End of stream
+            '#EOF#': 102,   // End of file  
+            '#NL#': 103,    // Newline hint
+        };
+        
+        // Base64 alphabet for output encoding
+        const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+        
+        function showStatus(message, type = 'success') {
+            const status = document.getElementById('status');
+            const icon = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            }[type] || '📌';
+            
+            status.innerHTML = `<div class="status-message ${type}">${icon} ${message}</div>`;
+        }
+        
+        function preprocessMarkers(text) {
+            // Replace markers with placeholder characters (one-way only)
+            let processed = text;
+            for (const [marker, index] of Object.entries(MARKERS)) {
+                // Use Unicode private use area as temporary placeholders
+                const placeholder = String.fromCharCode(0xE000 + index);
+                processed = processed.replace(new RegExp(marker.replace(/[#\[\]]/g, '\\$&'), 'g'), placeholder);
+            }
+            return processed;
+        }
+        
+        function encodeASC100(input) {
+            if (input === '') return '';
+            
+            // Preprocess markers (one-way conversion)
+            const processed = preprocessMarkers(input);
+            
+            // Convert characters to indices
+            const indices = [];
+            for (const char of processed) {
+                const code = char.charCodeAt(0);
+                
+                // Check if it's a marker placeholder
+                if (code >= 0xE000 && code <= 0xE103) {
+                    indices.push(code - 0xE000);  // Extract marker index (100-103)
+                } else {
+                    // Regular character
+                    const idx = BASE_CHARSET.indexOf(char);
+                    if (idx !== -1) {
+                        indices.push(idx);
+                    } else {
+                        console.warn(`Character not in base set: "${char}" (U+${code.toString(16).toUpperCase().padStart(4, '0')})`);
+                        // Skip unsupported characters
+                    }
+                }
+            }
+            
+            // Pack indices into 7-bit values
+            let binaryStr = '';
+            for (const index of indices) {
+                binaryStr += index.toString(2).padStart(7, '0');
+            }
+            
+            // Pad to multiple of 6 for Base64
+            while (binaryStr.length % 6 !== 0) {
+                binaryStr += '0';
+            }
+            
+            // Convert to Base64
+            let encoded = '';
+            for (let i = 0; i < binaryStr.length; i += 6) {
+                const sixBits = binaryStr.substring(i, i + 6);
+                const index = parseInt(sixBits, 2);
+                encoded += BASE64_CHARS[index];
+            }
+            
+            return encoded;
+        }
+        
+        function decodeASC100(encoded) {
+            if (encoded === '') return '';
+            
+            // Convert Base64 to binary
+            let binaryStr = '';
+            for (const char of encoded) {
+                const index = BASE64_CHARS.indexOf(char);
+                if (index === -1) {
+                    throw new Error(`Invalid Base64 character: "${char}"`);
+                }
+                binaryStr += index.toString(2).padStart(6, '0');
+            }
+            
+            // Extract 7-bit indices
+            const indices = [];
+            for (let i = 0; i + 7 <= binaryStr.length; i += 7) {
+                const sevenBits = binaryStr.substring(i, i + 7);
+                const index = parseInt(sevenBits, 2);
+                if (index > 0 || i === 0) {  // Include index 0 (space) but skip padding
+                    indices.push(index);
+                }
+            }
+            
+            // Convert indices to characters
+            let decoded = '';
+            for (const index of indices) {
+                if (index < BASE_CHARSET.length) {
+                    // Regular character - decode normally
+                    decoded += BASE_CHARSET[index];
+                } 
+                // Indices 100-103 are hints only - DO NOT recreate markers
+                // They were consumed during encoding and don't produce output
+            }
+            
+            return decoded;
+        }
+        
+        function encodeText() {
+            const input = document.getElementById('input').value;
+            
+            try {
+                const encoded = encodeASC100(input);
+                document.getElementById('encoded').value = encoded;
+                
+                // Update stats
+                updateStats(input, encoded);
+                
+                showStatus('Successfully encoded with ASC100!', 'success');
+                
+            } catch (error) {
+                showStatus(`Encoding failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function decodeText() {
+            const encoded = document.getElementById('encoded').value;
+            
+            if (!encoded.trim()) {
+                showStatus('No encoded text to decode', 'warning');
+                return;
+            }
+            
+            try {
+                const decoded = decodeASC100(encoded);
+                document.getElementById('decoded').value = decoded;
+                
+                showStatus('Successfully decoded! (Markers are hints only - not recreated)', 'info');
+                
+            } catch (error) {
+                showStatus(`Decoding failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function testRoundTrip() {
+            const input = document.getElementById('input').value;
+            
+            if (!input.trim()) {
+                showStatus('No input text to test', 'warning');
+                return;
+            }
+            
+            try {
+                const encoded = encodeASC100(input);
+                const decoded = decodeASC100(encoded);
+                
+                document.getElementById('encoded').value = encoded;
+                document.getElementById('decoded').value = decoded;
+                
+                // For round-trip, we need to compare without markers
+                const inputWithoutMarkers = input
+                    .replace(/#SSX#/g, '')
+                    .replace(/#ESX#/g, '')
+                    .replace(/#EOF#/g, '')
+                    .replace(/#NL#/g, '');
+                
+                if (inputWithoutMarkers === decoded) {
+                    showStatus('✨ Perfect round-trip! Text preserved (markers are hints only).', 'success');
+                    document.getElementById('verificationResult').innerHTML = 
+                        '<div class="status-message success">✅ Text content preserved - markers were one-way hints</div>';
+                } else {
+                    showStatus('Round-trip mismatch - some characters may not be supported', 'warning');
+                    document.getElementById('verificationResult').innerHTML = 
+                        '<div class="status-message warning">⚠️ Check for unsupported characters</div>';
+                }
+                
+                updateStats(input, encoded);
+                
+            } catch (error) {
+                showStatus(`Round-trip test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function testMarkers() {
+            const testInput = `#SSX#
+// Stream starts here
+console.log("Hello");
+// Adding explicit newline hint#NL#
+function test() {
+    return true;
+}
+// End of stream
+#ESX#
+#EOF#`;
+            
+            document.getElementById('input').value = testInput;
+            encodeText();
+            setTimeout(() => {
+                decodeText();
+                showStatus('Marker test complete! Note: markers are hints only and not recreated on decode.', 'info');
+            }, 100);
+        }
+        
+        function updateStats(input, encoded) {
+            const stats = document.getElementById('stats');
+            stats.style.display = 'grid';
+            
+            document.getElementById('originalSize').textContent = input.length;
+            document.getElementById('encodedSize').textContent = encoded.length;
+            document.getElementById('ratio').textContent = 
+                input.length > 0 ? (encoded.length / input.length).toFixed(1) + 'x' : '1.0x';
+            
+            // Calculate actual bit efficiency
+            const originalBits = input.length * 8;
+            const encodedBits = encoded.length * 6; // Base64 uses 6 bits per char
+            const efficiency = ((originalBits - encodedBits) / originalBits * 100).toFixed(1);
+            document.getElementById('efficiency').textContent = efficiency + '%';
+        }
+        
+        function copyEncoded() {
+            const encoded = document.getElementById('encoded');
+            if (!encoded.value.trim()) {
+                showStatus('No encoded text to copy', 'warning');
+                return;
+            }
+            
+            encoded.select();
+            document.execCommand('copy');
+            showStatus('Encoded text copied to clipboard!', 'success');
+        }
+        
+        function clearAll() {
+            document.getElementById('input').value = '';
+            document.getElementById('encoded').value = '';
+            document.getElementById('decoded').value = '';
+            document.getElementById('status').innerHTML = '';
+            document.getElementById('stats').style.display = 'none';
+            document.getElementById('verificationResult').innerHTML = '';
+        }
+        
+        // Initialize
+        console.log('🔧 ASC100 Character Encoder initialized');
+        console.log('📊 Base charset size:', BASE_CHARSET.length);
+        console.log('🏷️ Extension markers (one-way hints):', Object.keys(MARKERS).length);
+        console.log('📈 Indices: 0-99 (chars), 100-103 (hint markers)');
+        console.log('⚠️ Markers are hints only - not recreated on decode!');
+    </script>
+</body>
+</html>
