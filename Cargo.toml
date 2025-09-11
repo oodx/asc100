@@ -20,8 +20,10 @@ default = []
 random = ["rand", "uuid"]
 # Enable regex features
 patterns = ["regex"]
+# Enable XStream integration
+xstream = []
 # Enable all extended features
-full = ["random", "patterns"]
+full = ["random", "patterns", "xstream"]
 
 [[bin]]
 name = "asc100"

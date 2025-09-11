@@ -12,4 +12,5 @@ pub use charset::{
     BASE64_LOOKUP,
     preprocess_markers,
     postprocess_markers,
+    MARKERS,
 };

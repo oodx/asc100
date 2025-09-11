@@ -36,13 +36,40 @@ Input Text → Character Indices (0-127) → 7-bit Binary → Base64 Output
 
 ## Current Implementation
 
-### Encoding Process
+ASC100 now supports **two encoding approaches**: legacy functions for backwards compatibility and a new **strategy-based system** for flexible encoding with filtering.
+
+### Strategy-Based Architecture (New)
+
+#### Encoding Strategies:
+- **CoreStrategy**: Base 100 characters only (indices 0-99), no extension markers
+- **ExtensionsStrategy**: Full support including markers (indices 100-127)
+
+#### Filtering Options:
+- **StrictFilter**: Errors on any invalid character
+- **SanitizeFilter**: Replaces invalid characters with `#INV#` marker
+- **StripFilter**: Silently removes invalid characters
+
+#### Strategy-Based Encoding Process
+1. **Preprocessing**: Apply filtering strategy + marker replacement (if Extensions strategy)
+2. **Character Mapping**: Map each character to its index (0-99) or marker index (100-127)
+3. **Binary Packing**: Convert indices to 7-bit binary values
+4. **Base64 Encoding**: Pack binary into 6-bit chunks for Base64 output
+
+#### Strategy-Based Decoding Process
+1. **Base64 Decode**: Convert Base64 back to binary
+2. **Index Extraction**: Extract 7-bit indices from binary
+3. **Character/Marker Mapping**: Convert indices 0-99 to characters, 100-127 to marker strings
+4. **Postprocessing**: Apply strategy postprocessing
+
+### Legacy Implementation (Backwards Compatibility)
+
+#### Legacy Encoding Process
 1. **Marker Replacement**: Replace `#SSX#`, `#ESX#`, `#EOF#`, `#NL#` with temporary placeholders
 2. **Character Mapping**: Map each character to its index (0-99) or marker index (100-103)
 3. **Binary Packing**: Convert indices to 7-bit binary values
 4. **Base64 Encoding**: Pack binary into 6-bit chunks for Base64 output
 
-### Decoding Process
+#### Legacy Decoding Process
 1. **Base64 Decode**: Convert Base64 back to binary
 2. **Index Extraction**: Extract 7-bit indices from binary
 3. **Character Mapping**: Convert indices 0-99 back to characters
@@ -50,10 +77,18 @@ Input Text → Character Indices (0-127) → 7-bit Binary → Base64 Output
 
 ### Important Behaviors
 
-- **One-Way Markers**: Extension markers encode to indices but don't regenerate on decode
+#### Strategy-Based System:
+- **Marker Restoration**: Extension markers are restored as strings during decode (new behavior)
+- **Flexible Filtering**: Invalid characters can be handled via error, replacement, or removal
+- **Strategy Validation**: Decoders validate that indices are supported by the strategy
 - **Whitespace Preservation**: Actual whitespace characters (`\n`, `\t`, ` `) are preserved
-- **Padding Handling**: Trailing zeros from bit padding are ignored during decode
 - **Index 0 is Space**: The space character maps to index 0 (not a null/padding indicator)
+
+#### Legacy System:
+- **One-Way Markers**: Extension markers encode to indices but don't regenerate on decode
+- **Limited Extension Support**: Only supports indices 100-103
+- **No Filtering**: Direct character validation without preprocessing options
+- **Padding Handling**: Trailing zeros from bit padding are ignored during decode
 
 ## Future Considerations: Wrapper Patterns
 
@@ -134,12 +169,20 @@ function encodeASC100(text) {
 ## Use Cases
 
 ### Current (Implemented)
-- Encoding source code for URL parameters
-- Transmitting configuration files through web APIs
-- Preserving whitespace in text transmission
-- Adding simple EOF/stream markers as hints
+- **Basic Text Encoding**: Source code, configuration files, mixed content
+- **URL-Safe Transmission**: Web APIs, query parameters, form data
+- **Whitespace Preservation**: Code formatting, structured text
+- **Content Filtering**: Sanitize or strip invalid characters automatically
+- **Extension Markers**: Stream boundaries, file markers, protocol hints
+- **Multiple Character Sets**: Optimized for numbers, lowercase text, URLs, general purpose
 
-### Future (With Preprocessing Layer)
+### Current Strategy Applications
+- **Web Applications**: Sanitize user input while preserving valid content
+- **Data Processing**: Strip problematic characters from imported text
+- **Protocol Design**: Use extension markers for structured communication
+- **Content Validation**: Strict filtering for security-sensitive applications
+
+### Future (With Advanced Preprocessing Layer)
 - Distinguishing trusted text from code
 - Embedding function calls in transmitted data
 - Protocol negotiation and handshakes
@@ -173,25 +216,40 @@ function encodeASC100(text) {
 - Trying to parse complex patterns at the character level
 - Not handling the 7-bit to 6-bit conversion properly
 
-## Roadmap
+## Implementation Status
 
-### Phase 1: Core Encoding ✅ (Complete)
+### ✅ Phase 1: Core Encoding (Complete)
 - Character-to-index mapping
 - 7-bit binary packing
 - Base64 output encoding
 - Simple marker support
+- Legacy API for backwards compatibility
 
-### Phase 2: Preprocessing Layer (Future)
-- Tokenizer for complex patterns
+### ✅ Phase 2: Strategy Architecture (Complete)
+- Strategy-based encoding/decoding system
+- Multiple filtering strategies (strict, sanitize, strip)
+- Core vs Extensions strategy separation
+- Flexible marker handling
+- Comprehensive error handling
+
+### ✅ Phase 3: Character Set Optimization (Complete)
+- V1_STANDARD: Balanced general purpose
+- V2_NUMBERS: Optimized for numeric data
+- V3_LOWERCASE: Optimized for text content
+- V4_URL: Optimized for web URLs
+
+### 🔧 Known Issues
+- **Extensions Strategy Marker Decoding**: Some marker restoration edge cases need refinement
+- **Performance Optimization**: Strategy overhead could be reduced
+- **Documentation**: API examples could be expanded
+
+### 🚀 Future Enhancements
+- Advanced preprocessing layer for complex patterns
 - Trust validation system
 - Function call parser
 - Metadata extractor
-
-### Phase 3: Protocol Features (Future)
-- Handshake negotiation
-- Version compatibility
-- Compression integration
 - Streaming support
+- Compression integration
 
 ## Conclusion
 

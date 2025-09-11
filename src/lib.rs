@@ -3,8 +3,21 @@ pub mod char;
 #[cfg(feature = "random")]
 pub mod rand;
 
-use char::{BASE64_CHARS, BASE64_LOOKUP, preprocess_markers, postprocess_markers};
+#[cfg(feature = "xstream")]
+pub mod xstream_simple;
+
+#[cfg(feature = "xstream")]
+pub mod xstream_transformer;
+
+use char::{BASE64_CHARS, BASE64_LOOKUP, preprocess_markers, postprocess_markers, MARKERS};
 use char::extensions::EncodingStrategy;
+
+// Sentinel-based representation for two-phase encoding
+#[derive(Debug, Clone)]
+enum Sentinel {
+    Text(String),
+    Marker(u8),
+}
 
 // Re-export commonly used items from char module
 pub use char::versions;
@@ -31,44 +44,97 @@ impl std::fmt::Display for Asc100Error {
 impl std::error::Error for Asc100Error {}
 
 // ============================================================================
+// TWO-PHASE TOKENIZATION
+// ============================================================================
+
+/// Parse input into sentinels, separating text from markers
+fn parse_sentinels<S: EncodingStrategy>(input: &str, strategy: &S) -> Result<Vec<Sentinel>, Asc100Error> {
+    let mut sentinels = Vec::new();
+    let mut current_text = String::new();
+    let mut chars = input.chars().peekable();
+    
+    while let Some(ch) = chars.next() {
+        if ch == '#' {
+            // Potential marker start
+            let mut marker_candidate = String::from("#");
+            
+            // Collect characters until next #
+            while let Some(&next_ch) = chars.peek() {
+                marker_candidate.push(chars.next().unwrap());
+                if next_ch == '#' {
+                    break;
+                }
+            }
+            
+            // Check if this is a valid marker
+            if let Some((_, marker_index)) = MARKERS.iter().find(|(marker_str, _)| *marker_str == &marker_candidate) {
+                if strategy.supports_index(*marker_index) {
+                    // Valid marker - save any accumulated text first
+                    if !current_text.is_empty() {
+                        sentinels.push(Sentinel::Text(current_text.clone()));
+                        current_text.clear();
+                    }
+                    sentinels.push(Sentinel::Marker(*marker_index));
+                    continue;
+                }
+            }
+            
+            // Not a valid marker, treat as regular text
+            current_text.push_str(&marker_candidate);
+        } else {
+            current_text.push(ch);
+        }
+    }
+    
+    // Add any remaining text
+    if !current_text.is_empty() {
+        sentinels.push(Sentinel::Text(current_text));
+    }
+    
+    Ok(sentinels)
+}
+
+// ============================================================================
 // STRATEGY-BASED ENCODING (NEW)
 // ============================================================================
 
 pub fn encode_with_strategy<S: EncodingStrategy>(
     input: &str, 
-    charset: &[char; 100], 
+    _charset: &[char; 100], 
     lookup: &[u8; 128], 
     strategy: &S
 ) -> Result<String, Asc100Error> {
-    // Step 1: Apply strategy preprocessing (filtering + markers)
-    let processed_input = strategy.preprocess(input)?;
+    // Phase 1: Apply strategy preprocessing (filtering only)
+    let filtered_input = strategy.preprocess(input)?;
     
-    let mut indices = Vec::with_capacity(processed_input.len());
+    // Phase 2: Parse into sentinels (text and markers)
+    let sentinels = parse_sentinels(&filtered_input, strategy)?;
     
-    // Convert characters to indices
-    for ch in processed_input.chars() {
-        let ascii = ch as u32;
-        if ascii >= 128 {
-            return Err(Asc100Error::NonAsciiInput);
+    let mut indices = Vec::new();
+    
+    // Phase 3: Convert sentinels to indices
+    for sentinel in sentinels {
+        match sentinel {
+            Sentinel::Text(text) => {
+                // Convert text characters to charset indices
+                for ch in text.chars() {
+                    let ascii = ch as u32;
+                    if ascii >= 128 {
+                        return Err(Asc100Error::NonAsciiInput);
+                    }
+                    
+                    let index = lookup[ascii as usize];
+                    if index == 255 {
+                        return Err(Asc100Error::InvalidCharacter(ch));
+                    }
+                    indices.push(index);
+                }
+            }
+            Sentinel::Marker(marker_index) => {
+                // Use marker index directly
+                indices.push(marker_index);
+            }
         }
-        
-        let index = if ascii >= 100 && ascii <= 127 {
-            // Extension marker - check if strategy supports it
-            let idx = ascii as u8;
-            if !strategy.supports_index(idx) {
-                return Err(Asc100Error::InvalidIndex(idx));
-            }
-            idx
-        } else {
-            // Regular character - look up in charset
-            let idx = lookup[ascii as usize];
-            if idx == 255 {
-                return Err(Asc100Error::InvalidCharacter(ch));
-            }
-            idx
-        };
-        
-        indices.push(index);
     }
     
     // Convert indices to 7-bit binary
@@ -144,7 +210,12 @@ pub fn decode_with_strategy<S: EncodingStrategy>(
             if !strategy.supports_index(index) {
                 return Err(Asc100Error::InvalidIndex(index));
             }
-            result.push(char::from(index));
+            // Convert marker index directly to marker string
+            let marker_str = MARKERS.iter()
+                .find(|(_, marker_index)| *marker_index == index)
+                .map(|(marker_str, _)| *marker_str)
+                .unwrap_or("");
+            result.push_str(marker_str);
         } else if index < 100 {
             // Regular character from charset
             result.push(charset[index as usize]);
@@ -272,6 +343,7 @@ pub fn decode(encoded: &str, charset: &[char; 100]) -> Result<String, Asc100Erro
 mod tests {
     use super::*;
     use crate::versions::V1_STANDARD;
+    use crate::char::extensions::CoreStrategy;
     
     #[test]
     fn test_roundtrip() {
@@ -285,9 +357,11 @@ mod tests {
             "~",
         ];
         
+        let strategy = CoreStrategy::strict();
+        
         for input in test_cases {
-            let encoded = encode(input, &V1_STANDARD.charset, &V1_STANDARD.lookup).unwrap();
-            let decoded = decode(&encoded, &V1_STANDARD.charset).unwrap();
+            let encoded = encode_with_strategy(input, &V1_STANDARD.charset, &V1_STANDARD.lookup, &strategy).unwrap();
+            let decoded = decode_with_strategy(&encoded, &V1_STANDARD.charset, &strategy).unwrap();
             assert_eq!(input, decoded, "Roundtrip failed for: {}", input);
         }
     }

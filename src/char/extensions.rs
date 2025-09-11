@@ -1,4 +1,4 @@
-use super::charset::{preprocess_markers, postprocess_markers};
+// Marker processing is now handled in the main encoding logic
 
 /// Action to take when encountering a character during filtering
 #[derive(Debug, Clone)]
@@ -117,14 +117,13 @@ pub struct ExtensionsStrategy<F: FilterStrategy> {
 
 impl<F: FilterStrategy> EncodingStrategy for ExtensionsStrategy<F> {
     fn preprocess(&self, input: &str) -> Result<String, crate::Asc100Error> {
-        // First apply filter, then process markers
-        let filtered = self.filter.filter_input(input)?;
-        Ok(preprocess_markers(&filtered))
+        // Only apply filter - markers are handled in tokenization phase
+        self.filter.filter_input(input)
     }
     
     fn postprocess(&self, output: &str) -> String {
-        // Restore markers
-        postprocess_markers(output)
+        // Markers are already restored during decode
+        output.to_string()
     }
     
     fn supports_index(&self, index: u8) -> bool {
