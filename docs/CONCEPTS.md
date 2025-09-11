@@ -4,6 +4,12 @@
 
 ASC100 is a **character-level encoding system** that maps text to a base-100 character set, then encodes it as 7-bit values packed into Base64 for URL-safe transmission. It provides 87.5% bit efficiency compared to standard 8-bit encoding.
 
+**Key Features:**
+- **Strategy-based encoding** with filtering for invalid characters
+- **Extension markers** (indices 100-127) for structured data
+- **Version compliance** via control markers
+- **Cross-platform templating** with universal quote handling
+
 ## Architecture
 
 ### Character Mapping (Implemented)

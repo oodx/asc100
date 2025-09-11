@@ -1,0 +1,32 @@
+[package]
+name = "asc100"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Optional dependencies for extended features
+rand = { version = "0.9", optional = true }
+regex = { version = "1.10", optional = true }
+uuid = { version = "1.6", features = ["v4", "fast-rng"], optional = true }
+
+[dev-dependencies]
+# Always available for tests and examples
+rand = "0.9"
+uuid = "1.6"
+
+[features]
+default = []
+# Enable random generation features
+random = ["rand", "uuid"]
+# Enable regex features
+patterns = ["regex"]
+# Enable all extended features
+full = ["random", "patterns"]
+
+[[bin]]
+name = "asc100"
+path = "src/main.rs"
+
+[lib]
+name = "asc100"
+path = "src/lib.rs"
