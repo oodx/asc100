@@ -37,7 +37,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Encode all token values
     let encoded = utils::encode_token_string(tokens, &encoder)?;
     println!("Encoded: {}", encoded);
-    // Output: "user:asc=am9obkBleGFtcGxlLmNvbQ==; pass:asc=c2VjcmV0MTIz; config:asc=ZGVidWc="
+    // Output: "user_asc=am9obkBleGFtcGxlLmNvbQ==; pass_asc=c2VjcmV0MTIz; config_asc=ZGVidWc="
     
     // Decode back to original
     let decoded = utils::decode_token_string(&encoded, &encoder)?;
@@ -87,10 +87,10 @@ let encoder = Asc100ValueEncoder::core(Asc100Mode::KeySuffix);
 
 // Encode individual key-value pairs
 let (key, value) = encoder.encode_kv_pair("password", "secret123")?;
-// Result: ("password:asc", "c2VjcmV0MTIz")
+// Result: ("password_asc", "c2VjcmV0MTIz")
 
 // Auto-detect and decode
-let (clean_key, decoded) = encoder.decode_kv_pair("password:asc", "c2VjcmV0MTIz")?;
+let (clean_key, decoded) = encoder.decode_kv_pair("password_asc", "c2VjcmV0MTIz")?;
 // Result: ("password", "secret123")
 ```
 
@@ -105,7 +105,7 @@ let transformer = Asc100Transformer::core(TransformMode::Bidirectional);
 
 // Transform based on current state
 let (key, value) = transformer.transform_value("data", "content")?;
-// If unmarked: ("data:asc", "Y29udGVudA==")
+// If unmarked: ("data_asc", "Y29udGVudA==")
 // If marked: auto-decodes back to original
 ```
 
@@ -129,7 +129,7 @@ let result = pipeline::chain_transform(input, &encoder, |intermediate| {
 })?;
 
 println!("{}", result);
-// Output: "user:asc=am9obg==; data:asc=c2Vuc2l0aXZl; timestamp=1234567890"
+// Output: "user_asc=am9obg==; data_asc=c2Vuc2l0aXZl; timestamp=1234567890"
 ```
 
 #### Selective Transformation
@@ -147,7 +147,7 @@ let result = pipeline::transform_selective(
 )?;
 
 println!("{}", result);
-// Output: "user:asc=am9obg==; pass:asc=c2VjcmV0; debug=true; temp=data"
+// Output: "user_asc=am9obg==; pass_asc=c2VjcmV0; debug=true; temp=data"
 ```
 
 ### Fork and Merge Operations
@@ -197,7 +197,7 @@ assert_eq!(small, result);
 // Large content - gets encoded
 let large = format!("content={}", "Large data ".repeat(10));
 let result = integration::compression_gate(&large, &transformer, 20)?;
-assert!(result.contains("content:asc="));
+assert!(result.contains("content_asc="));
 ```
 
 ## Encoding Strategies
@@ -229,14 +229,14 @@ let encoded = utils::encode_token_string(template, &encoder)?;
 ### Encoding Modes
 
 #### Key Suffix Mode (Recommended)
-Adds `:asc` to keys to indicate encoding:
+Adds `_asc` to keys to indicate encoding:
 
 ```rust
 use asc100::xstream_simple::{Asc100ValueEncoder, Asc100Mode};
 
 let encoder = Asc100ValueEncoder::core(Asc100Mode::KeySuffix);
 let (key, value) = encoder.encode_kv_pair("password", "secret")?;
-// Result: ("password:asc", "c2VjcmV0")
+// Result: ("password_asc", "c2VjcmV0")
 ```
 
 #### Value Suffix Mode
@@ -254,7 +254,7 @@ Maximum compatibility - uses both indicators:
 ```rust
 let encoder = Asc100ValueEncoder::core(Asc100Mode::Both);
 let (key, value) = encoder.encode_kv_pair("password", "secret")?;
-// Result: ("password:asc", "c2VjcmV0:a")
+// Result: ("password_asc", "c2VjcmV0:a")
 ```
 
 ## Template System Usage
@@ -376,7 +376,7 @@ fn process_auth_tokens(auth_data: &str) -> Result<String, Box<dyn std::error::Er
 let auth = "user=john; password=secret123; token=xyz789; debug=true";
 let encoded_auth = process_auth_tokens(auth)?;
 println!("Safe auth: {}", encoded_auth);
-// Output: "user=john; password:asc=c2VjcmV0MTIz; token:asc=eHl6Nzg5; debug=true"
+// Output: "user=john; password_asc=c2VjcmV0MTIz; token_asc=eHl6Nzg5; debug=true"
 ```
 
 ### Configuration File Transmission
@@ -443,10 +443,10 @@ fn smart_processor(input: &str) -> Result<String, Box<dyn std::error::Error>> {
 }
 
 // Mixed encoded/unencoded input
-let mixed = "normal=text; encoded:asc=ZW5jb2RlZA==; new=content";
+let mixed = "normal=text; encoded_asc=ZW5jb2RlZA==; new=content";
 let processed = smart_processor(mixed)?;
 println!("Smart processed: {}", processed);
-// Output: "normal:asc=dGV4dA==; encoded=encoded; new:asc=Y29udGVudA=="
+// Output: "normal_asc=dGV4dA==; encoded=encoded; new_asc=Y29udGVudA=="
 ```
 
 ### Performance-Optimized Processing
@@ -488,9 +488,9 @@ let result = optimized_processor(
 
 ```rust
 pub enum Asc100Mode {
-    KeySuffix,      // "key:asc=value"
+    KeySuffix,      // "key_asc=value"
     ValueSuffix,    // "key=value:a"
-    Both,           // "key:asc=value:a"
+    Both,           // "key_asc=value:a"
 }
 
 pub struct Asc100ValueEncoder<S: EncodingStrategy> {

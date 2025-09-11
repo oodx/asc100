@@ -65,11 +65,15 @@ pub const V4_URL: Asc100Version = Asc100Version {
 
 impl Asc100Version {
     pub fn encode(&self, input: &str) -> Result<String, crate::Asc100Error> {
-        crate::encode(input, &self.charset, &self.lookup)
+        // Use the working strategy-based algorithm with CoreStrategy
+        let strategy = crate::char::extensions::CoreStrategy::strict();
+        crate::encode_with_strategy(input, &self.charset, &self.lookup, &strategy)
     }
     
     pub fn decode(&self, encoded: &str) -> Result<String, crate::Asc100Error> {
-        crate::decode(encoded, &self.charset)
+        // Use the working strategy-based algorithm with CoreStrategy
+        let strategy = crate::char::extensions::CoreStrategy::strict();
+        crate::decode_with_strategy(encoded, &self.charset, &strategy)
     }
     
     pub fn display_charset(&self) {

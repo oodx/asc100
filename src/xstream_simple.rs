@@ -10,7 +10,7 @@ use crate::{encode_with_strategy, decode_with_strategy, Asc100Error};
 /// Encoding mode for XStream token values
 #[derive(Debug, Clone)]
 pub enum Asc100Mode {
-    /// Add `:asc` suffix to key: `content:asc="encoded_value"`
+    /// Add `_asc` suffix to key: `content_asc="encoded_value"`
     KeySuffix,
     /// Add `:a` suffix to value: `content="encoded_value:a"`
     ValueSuffix,
@@ -67,15 +67,15 @@ impl<S: EncodingStrategy> Asc100ValueEncoder<S> {
         let encoded_value = self.encode_value(value)?;
         
         match self.mode {
-            Asc100Mode::KeySuffix => Ok((format!("{}:asc", key), encoded_value)),
+            Asc100Mode::KeySuffix => Ok((format!("{}_asc", key), encoded_value)),
             Asc100Mode::ValueSuffix => Ok((key.to_string(), format!("{}:a", encoded_value))),
-            Asc100Mode::Both => Ok((format!("{}:asc", key), format!("{}:a", encoded_value))),
+            Asc100Mode::Both => Ok((format!("{}_asc", key), format!("{}:a", encoded_value))),
         }
     }
 
     /// Transform a key-value pair for decoding (auto-detect encoding)
     pub fn decode_kv_pair(&self, key: &str, value: &str) -> Result<(String, String), Asc100Error> {
-        let key_encoded = key.ends_with(":asc");
+        let key_encoded = key.ends_with("_asc");
         let value_encoded = value.ends_with(":a");
 
         if !key_encoded && !value_encoded {
@@ -85,7 +85,7 @@ impl<S: EncodingStrategy> Asc100ValueEncoder<S> {
 
         // Extract clean key and value
         let clean_key = if key_encoded {
-            key.trim_end_matches(":asc")
+            key.trim_end_matches("_asc")
         } else {
             key
         };
@@ -209,9 +209,9 @@ impl<S: EncodingStrategy> Asc100Streamable<S> {
 //             .map_err(|e| e.to_string())?;
 //         
 //         let (key, value) = match self.encoder.mode {
-//             Asc100Mode::KeySuffix => ("content:asc".to_string(), encoded),
+//             Asc100Mode::KeySuffix => ("content_asc".to_string(), encoded),
 //             Asc100Mode::ValueSuffix => ("content".to_string(), format!("{}:a", encoded)),
-//             Asc100Mode::Both => ("content:asc".to_string(), format!("{}:a", encoded)),
+//             Asc100Mode::Both => ("content_asc".to_string(), format!("{}:a", encoded)),
 //         };
 //         
 //         Ok(vec![Token { 
