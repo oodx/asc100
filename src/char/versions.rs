@@ -76,6 +76,16 @@ impl Asc100Version {
         crate::decode_with_strategy(encoded, &self.charset, &strategy)
     }
     
+    /// Encode with a custom strategy - convenience method to reduce parameter burden
+    pub fn encode_with<S: crate::char::extensions::EncodingStrategy>(&self, input: &str, strategy: &S) -> Result<String, crate::Asc100Error> {
+        crate::encode_with_strategy(input, &self.charset, &self.lookup, strategy)
+    }
+    
+    /// Decode with a custom strategy - convenience method to reduce parameter burden
+    pub fn decode_with<S: crate::char::extensions::EncodingStrategy>(&self, encoded: &str, strategy: &S) -> Result<String, crate::Asc100Error> {
+        crate::decode_with_strategy(encoded, &self.charset, strategy)
+    }
+    
     pub fn display_charset(&self) {
         println!("Version: {}", self.name);
         println!("Charset mapping (first 20):");
