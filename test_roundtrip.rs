@@ -1,1 +1,0 @@
-use asc100::char::versions::V1_STANDARD; fn main() { let input = "Hello, World\!"; let encoded = V1_STANDARD.encode(input).unwrap(); let decoded = V1_STANDARD.decode(&encoded).unwrap(); println\!("Input: {}", input); println\!("Encoded: {}", encoded); println\!("Decoded: {}", decoded); println\!("Success: {}", input == decoded); }

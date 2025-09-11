@@ -1,4 +1,4 @@
-use asc100::char::{BASE64_CHARS, BASE64_LOOKUP};
+use asc100::char::BASE64_LOOKUP;
 
 fn debug_decode(encoded: &str) {
     println!("=== DECODING: {} ===", encoded);
