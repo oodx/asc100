@@ -1,5 +1,7 @@
 pub mod char;
 
+pub mod metrics;
+
 #[cfg(feature = "random")]
 pub mod rand;
 

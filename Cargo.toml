@@ -22,8 +22,10 @@ random = ["rand", "uuid"]
 patterns = ["regex"]
 # Enable XStream integration
 xstream = []
+# Enable performance metrics collection
+metrics = []
 # Enable all extended features
-full = ["random", "patterns", "xstream"]
+full = ["random", "patterns", "xstream", "metrics"]
 
 [[bin]]
 name = "asc100"
