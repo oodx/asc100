@@ -11,12 +11,15 @@ ASC100 is a **character-level encoding system** that efficiently encodes text to
 - **URL-Safe Output** - Base64 encoded for web transmission
 - **Lossless Compression** - Perfect roundtrip for all supported characters
 - **Strategy-Based Architecture** - Flexible encoding/decoding with customizable filtering
+- **Convenience API (v0.3.0+)** - Simplified methods with reduced parameter burden
+- **Enhanced Error Context (v0.3.0+)** - Position info and actionable suggestions
+- **Performance Metrics (v0.3.0+)** - Optional zero-cost instrumentation
 - **Invalid Character Strategies** - Strict/Strip/Sanitize handling for Unicode input
 - **Extension Markers** - Supports structured data hints (indices 100-127) including #INV#
 - **Multiple Character Sets** - Optimized versions for different use cases
 - **XStream Integration** - Full pipeline compatibility with namespace-safe _asc suffix
-- **Comprehensive Test Coverage** - 68 tests covering all edge cases and patterns
-- **Bulletproof Error Handling** - Clear error reporting and graceful degradation
+- **Comprehensive Test Coverage** - 42+ tests covering all edge cases and patterns
+- **Professional Error Handling** - Industry-leading error reporting with context
 
 ## Quick Start
 
@@ -24,10 +27,10 @@ Add ASC100 to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-asc100 = "0.1.0"
+asc100 = "0.3.0"
 
 # Optional features
-asc100 = { version = "0.1.0", features = ["random", "patterns"] }
+asc100 = { version = "0.3.0", features = ["random", "patterns", "metrics"] }
 ```
 
 ### Basic Usage
@@ -47,6 +50,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Decoded: {}", decoded);
     
     assert_eq!(text, decoded);
+    Ok(())
+}
+```
+
+### Convenience API (v0.3.0+)
+
+ASC100 v0.3.0 introduces convenient methods that reduce parameter burden:
+
+```rust
+use asc100::char::versions::V1_STANDARD;
+use asc100::char::extensions::{CoreStrategy, ExtensionsStrategy};
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let text = "Hello, World! 🦀";
+    
+    // Convenient API - reduced parameters
+    let strip_strategy = CoreStrategy::strip();
+    let encoded = V1_STANDARD.encode_with(text, &strip_strategy)?;
+    let decoded = V1_STANDARD.decode_with(&encoded, &strip_strategy)?;
+    
+    println!("Stripped: {}", decoded); // "Hello, World! " (emoji removed)
     Ok(())
 }
 ```
@@ -154,16 +178,23 @@ ASC100 provides three robust strategies for handling invalid characters (non-ASC
 **Best for:** Production systems requiring data integrity validation.
 
 ```rust
-use asc100::char::extensions::{CoreStrategy, ExtensionsStrategy};
-use asc100::{encode_with_strategy, Asc100Error};
+use asc100::char::extensions::CoreStrategy;
+use asc100::char::versions::V1_STANDARD;
+use asc100::Asc100Error;
 
 let strategy = CoreStrategy::strict();
-let input = "Hello\u{0080}World"; // Contains invalid Unicode character
+let input = "Hello🌍World"; // Contains invalid Unicode character
 
-match encode_with_strategy(input, &V1_STANDARD.charset, &V1_STANDARD.lookup, &strategy) {
+match V1_STANDARD.encode_with(input, &strategy) {
+    Err(Asc100Error::InvalidCharacterWithContext { char: ch, context }) => {
+        // Enhanced error context (v0.3.0+)
+        println!("Enhanced error: {}", 
+            format!("Invalid Unicode character U+{:04X} ('{}') at position {}. Use Strip or Sanitize strategy to handle non-ASCII input",
+                ch as u32, ch, context.position.unwrap_or(0)));
+    }
     Err(Asc100Error::InvalidCharacter(ch)) => {
+        // Legacy error handling (still supported)
         println!("Invalid character detected: {:?}", ch);
-        // Handle validation failure
     }
     Ok(encoded) => println!("Encoded: {}", encoded),
 }
@@ -173,11 +204,13 @@ match encode_with_strategy(input, &V1_STANDARD.charset, &V1_STANDARD.lookup, &st
 **Best for:** Data processing pipelines that need to preserve input structure.
 
 ```rust
-let strategy = ExtensionsStrategy::sanitize(); // Requires Extensions for #INV# marker
-let input = "Hello\u{0080}World"; // Invalid Unicode character
+use asc100::char::extensions::ExtensionsStrategy;
 
-let encoded = encode_with_strategy(input, &V1_STANDARD.charset, &V1_STANDARD.lookup, &strategy)?;
-let decoded = decode_with_strategy(&encoded, &V1_STANDARD.charset, &strategy)?;
+let strategy = ExtensionsStrategy::sanitize(); // Requires Extensions for #INV# marker
+let input = "Hello🌍World"; // Invalid Unicode character
+
+let encoded = V1_STANDARD.encode_with(input, &strategy)?;
+let decoded = V1_STANDARD.decode_with(&encoded, &strategy)?;
 
 println!("Result: {}", decoded); // "Hello#INV#World"
 // Invalid character replaced with #INV# marker for traceability
@@ -188,10 +221,10 @@ println!("Result: {}", decoded); // "Hello#INV#World"
 
 ```rust
 let strategy = CoreStrategy::strip();
-let input = "Hello\u{0080}\u{0081}World"; // Multiple invalid characters
+let input = "Hello🌍🦀World"; // Multiple invalid characters
 
-let encoded = encode_with_strategy(input, &V1_STANDARD.charset, &V1_STANDARD.lookup, &strategy)?;
-let decoded = decode_with_strategy(&encoded, &V1_STANDARD.charset, &strategy)?;
+let encoded = V1_STANDARD.encode_with(input, &strategy)?;
+let decoded = V1_STANDARD.decode_with(&encoded, &strategy)?;
 
 println!("Result: {}", decoded); // "HelloWorld"
 // Invalid characters silently removed
@@ -237,6 +270,45 @@ ASC100 provides significant compression for text data:
 **Comparison with Base64:**
 - Standard Base64: 133% of original size (4/3 ratio)
 - ASC100: ~115% of original size (better compression)
+
+## Performance Metrics (v0.3.0+)
+
+ASC100 includes optional performance instrumentation for optimization and monitoring:
+
+```rust
+use asc100::char::versions::V1_STANDARD;
+
+// Enable metrics feature in Cargo.toml:
+// asc100 = { version = "0.3.0", features = ["metrics"] }
+
+#[cfg(feature = "metrics")]
+use asc100::metrics::timed_encode;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let input = "Large data content for performance testing";
+    
+    #[cfg(feature = "metrics")]
+    {
+        let (result, metrics) = timed_encode(input, || {
+            V1_STANDARD.encode(input).expect("Should encode")
+        });
+        
+        if let Some(m) = metrics {
+            println!("{}", m.format_summary()); 
+            // Output: "115% compression, 0.02ms, 2000 chars/ms"
+        }
+    }
+    
+    Ok(())
+}
+```
+
+**Metrics Features:**
+- Zero-cost when disabled (feature flag)
+- Compression ratio calculation
+- Microsecond timing precision  
+- Throughput measurement (chars/ms)
+- Business-friendly formatting
 
 ## Character Coverage
 
@@ -343,8 +415,29 @@ ASC100
 │   └── extensions.rs - Strategy pattern and filtering
 └── Optional Features
     ├── rand/ - Random data generation (optional)
-    └── patterns/ - Regex support (optional)
+    ├── patterns/ - Regex support (optional)
+    └── metrics/ - Performance instrumentation (v0.3.0+)
 ```
+
+### Version History
+
+- **v0.3.0** - KREX Enhancement Implementation
+  - Enhanced error context with position info and actionable suggestions
+  - Convenience API methods (encode_with/decode_with) for improved ergonomics
+  - Performance metrics with zero-cost feature-gated instrumentation
+  - Professional error handling with business-grade context
+  - Comprehensive test coverage expansion
+
+- **v0.2.0** - BIZ1 Business Grade Certification
+  - Executive demo CLI with professional strategy showcase
+  - XStream integration with namespace-safe _asc suffix
+  - Strategy-based architecture with Core/Extensions separation
+  - Invalid character handling (Strict/Strip/Sanitize strategies)
+
+- **v0.1.0** - Initial Implementation
+  - Core 87.5% efficient encoding algorithm
+  - Base-100 character set with extension markers
+  - Strategy pattern foundation
 
 ## Use Cases
 
