@@ -52,7 +52,7 @@ impl<S: EncodingStrategy> Asc100Transformer<S> {
         match self.mode {
             TransformMode::EncodeKeyMarked => {
                 let encoded = self.encode_value(value)?;
-                Ok((format!("{}:asc", key), encoded))
+                Ok((format!("{}_asc", key), encoded))
             }
             TransformMode::EncodeValueMarked => {
                 let encoded = self.encode_value(value)?;
@@ -67,7 +67,7 @@ impl<S: EncodingStrategy> Asc100Transformer<S> {
                     self.try_decode_value(key, value)
                 } else {
                     let encoded = self.encode_value(value)?;
-                    Ok((format!("{}:asc", key), encoded))
+                    Ok((format!("{}_asc", key), encoded))
                 }
             }
         }
@@ -91,13 +91,13 @@ impl<S: EncodingStrategy> Asc100Transformer<S> {
 
     /// Check if a key-value pair is ASC100 encoded
     fn is_encoded(&self, key: &str, value: &str) -> bool {
-        key.ends_with(":asc") || value.ends_with(":a")
+        key.ends_with("_asc") || value.ends_with(":a")
     }
 
     /// Extract clean key and encoded value from marked pair
     fn extract_encoded_parts(&self, key: &str, value: &str) -> (String, String) {
-        let clean_key = if key.ends_with(":asc") {
-            key.trim_end_matches(":asc").to_string()
+        let clean_key = if key.ends_with("_asc") {
+            key.trim_end_matches("_asc").to_string()
         } else {
             key.to_string()
         };
