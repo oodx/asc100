@@ -13,10 +13,10 @@ mod transformer_tests {
         println!("Input:  {}", input);
         println!("Output: {}", result);
         
-        // Should have :asc suffixes on all keys
-        assert!(result.contains("user:asc="));
-        assert!(result.contains("pass:asc="));
-        assert!(result.contains("mode:asc="));
+        // Should have _asc suffixes on all keys
+        assert!(result.contains("user_asc="));
+        assert!(result.contains("pass_asc="));
+        assert!(result.contains("mode_asc="));
         
         // Values should be Base64 encoded
         assert!(!result.contains("john@example.com"));
@@ -58,7 +58,7 @@ mod transformer_tests {
         
         // Extract just the encoded part
         let encoded_part = test_encoded.split('=').nth(1).unwrap();
-        let input = format!("normal=text; encoded:asc={}; mixed=value", encoded_part);
+        let input = format!("normal=text; encoded_asc={}; mixed=value", encoded_part);
         
         let result = pipeline::transform_stream(&input, &bidirectional)
             .expect("Should handle bidirectional");
@@ -67,9 +67,9 @@ mod transformer_tests {
         println!("Output: {}", result);
         
         // Should decode the encoded token and encode the others
-        assert!(result.contains("normal:asc="));  // Should be encoded
+        assert!(result.contains("normal_asc="));  // Should be encoded
         assert!(result.contains("encoded=Test"));  // Should be decoded
-        assert!(result.contains("mixed:asc="));    // Should be encoded
+        assert!(result.contains("mixed_asc="));    // Should be encoded
     }
 
     #[test]
@@ -84,7 +84,7 @@ mod transformer_tests {
         println!("Template: {}", input);
         println!("Encoded:  {}", result);
         
-        assert!(result.contains("template:asc="));
+        assert!(result.contains("template_asc="));
         
         // Decode to verify roundtrip
         let decoder = transformers::extensions_decoder();
@@ -108,8 +108,8 @@ mod transformer_tests {
         println!("Selective:  {}", result);
         
         // Should only encode user and pass
-        assert!(result.contains("user:asc="));
-        assert!(result.contains("pass:asc="));
+        assert!(result.contains("user_asc="));
+        assert!(result.contains("pass_asc="));
         assert!(result.contains("debug=true"));  // unchanged
         assert!(result.contains("temp=data"));   // unchanged
     }
@@ -129,7 +129,7 @@ mod transformer_tests {
         let large_result = integration::compression_gate(&large, &transformer, 20)
             .expect("Should handle large content");
         assert_ne!(large, large_result);  // should be encoded
-        assert!(large_result.contains("content:asc="));
+        assert!(large_result.contains("content_asc="));
     }
 
     #[test]
@@ -162,8 +162,8 @@ mod transformer_tests {
         println!("Input:   {}", input);
         println!("Chained: {}", result);
         
-        assert!(result.contains("message:asc="));
-        assert!(result.contains("user:asc="));
+        assert!(result.contains("message_asc="));
+        assert!(result.contains("user_asc="));
         assert!(result.contains("timestamp=1234567890"));
     }
 
@@ -212,8 +212,8 @@ mod transformer_tests {
         println!("Output: {}", result);
         
         // Should preserve namespaces in keys
-        assert!(result.contains("app:config:asc="));
-        assert!(result.contains("user:name:asc="));
-        assert!(result.contains("global:asc="));
+        assert!(result.contains("app:config_asc="));
+        assert!(result.contains("user:name_asc="));
+        assert!(result.contains("global_asc="));
     }
 }
