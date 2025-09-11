@@ -23,8 +23,41 @@ enum Sentinel {
 pub use char::versions;
 
 #[derive(Debug, Clone)]
+pub struct ErrorContext {
+    pub position: Option<usize>,
+    pub strategy: Option<String>,
+    pub suggestion: Option<String>,
+}
+
+impl ErrorContext {
+    pub fn new() -> Self {
+        Self {
+            position: None,
+            strategy: None,
+            suggestion: None,
+        }
+    }
+    
+    pub fn with_position(mut self, pos: usize) -> Self {
+        self.position = Some(pos);
+        self
+    }
+    
+    pub fn with_strategy(mut self, strategy: &str) -> Self {
+        self.strategy = Some(strategy.to_string());
+        self
+    }
+    
+    pub fn with_suggestion(mut self, suggestion: &str) -> Self {
+        self.suggestion = Some(suggestion.to_string());
+        self
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum Asc100Error {
     InvalidCharacter(char),
+    InvalidCharacterWithContext { char: char, context: ErrorContext },
     InvalidBase64Character(char),
     InvalidIndex(u8),
     NonAsciiInput,
@@ -34,6 +67,23 @@ impl std::fmt::Display for Asc100Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Asc100Error::InvalidCharacter(c) => write!(f, "Invalid character: '{}'", c),
+            Asc100Error::InvalidCharacterWithContext { char: c, context } => {
+                let unicode_point = format!("U+{:04X}", *c as u32);
+                write!(f, "Invalid Unicode character {} ('{}'){}{}", 
+                    unicode_point, 
+                    c,
+                    if let Some(pos) = context.position { 
+                        format!(" at position {}", pos) 
+                    } else { 
+                        String::new() 
+                    },
+                    if let Some(suggestion) = &context.suggestion {
+                        format!(". {}", suggestion)
+                    } else {
+                        String::new()
+                    }
+                )
+            },
             Asc100Error::InvalidBase64Character(c) => write!(f, "Invalid base64 character: '{}'", c),
             Asc100Error::InvalidIndex(i) => write!(f, "Invalid index: {}", i),
             Asc100Error::NonAsciiInput => write!(f, "Input contains non-ASCII characters"),

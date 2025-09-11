@@ -1,6 +1,6 @@
 [package]
 name = "asc100"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 
 [dependencies]
@@ -28,6 +28,10 @@ full = ["random", "patterns", "xstream"]
 [[bin]]
 name = "asc100"
 path = "src/main.rs"
+
+[[bin]]
+name = "demo"
+path = "src/bin/demo.rs"
 
 [lib]
 name = "asc100"

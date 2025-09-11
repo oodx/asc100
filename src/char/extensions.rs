@@ -15,15 +15,28 @@ pub trait FilterStrategy {
     
     /// Apply the filter strategy to the entire input string
     fn filter_input(&self, input: &str) -> Result<String, crate::Asc100Error> {
+        self.filter_input_with_context(input, "Unknown")
+    }
+    
+    /// Apply the filter strategy with strategy context for enhanced error reporting
+    fn filter_input_with_context(&self, input: &str, strategy_name: &str) -> Result<String, crate::Asc100Error> {
         let mut result = String::new();
         
-        for ch in input.chars() {
+        for (pos, ch) in input.char_indices() {
             match self.handle_char(ch) {
                 FilterAction::Keep => result.push(ch),
                 FilterAction::Replace(replacement) => result.push_str(&replacement),
                 FilterAction::Skip => {}, // Do nothing
                 FilterAction::Error(invalid_char) => {
-                    return Err(crate::Asc100Error::InvalidCharacter(invalid_char));
+                    let context = crate::ErrorContext::new()
+                        .with_position(pos)
+                        .with_strategy(strategy_name)
+                        .with_suggestion("Use Strip or Sanitize strategy to handle non-ASCII input");
+                    
+                    return Err(crate::Asc100Error::InvalidCharacterWithContext { 
+                        char: invalid_char, 
+                        context 
+                    });
                 }
             }
         }
@@ -97,7 +110,7 @@ pub struct CoreStrategy<F: FilterStrategy> {
 impl<F: FilterStrategy> EncodingStrategy for CoreStrategy<F> {
     fn preprocess(&self, input: &str) -> Result<String, crate::Asc100Error> {
         // Only apply filter, no marker processing
-        self.filter.filter_input(input)
+        self.filter.filter_input_with_context(input, "CoreStrategy")
     }
     
     fn postprocess(&self, output: &str) -> String {
@@ -118,7 +131,7 @@ pub struct ExtensionsStrategy<F: FilterStrategy> {
 impl<F: FilterStrategy> EncodingStrategy for ExtensionsStrategy<F> {
     fn preprocess(&self, input: &str) -> Result<String, crate::Asc100Error> {
         // Only apply filter - markers are handled in tokenization phase
-        self.filter.filter_input(input)
+        self.filter.filter_input_with_context(input, "ExtensionsStrategy")
     }
     
     fn postprocess(&self, output: &str) -> String {

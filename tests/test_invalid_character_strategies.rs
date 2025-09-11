@@ -11,8 +11,8 @@ fn test_invalid_character_error_strategy() {
     let invalid_input = "Hello\u{0080}World"; // Unicode > 127
     
     match encode_with_strategy(invalid_input, &V1_STANDARD.charset, &V1_STANDARD.lookup, &strategy) {
-        Err(Asc100Error::InvalidCharacter(_)) => {
-            // Expected behavior for invalid character
+        Err(Asc100Error::InvalidCharacter(_)) | Err(Asc100Error::InvalidCharacterWithContext { .. }) => {
+            // Expected behavior for invalid character (both old and new error types)
         }
         Ok(_) => panic!("Should have failed with invalid character"),
         Err(e) => panic!("Unexpected error type: {}", e),
